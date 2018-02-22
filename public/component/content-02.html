@@ -1,10 +1,5 @@
 <section class="content-02">
     <h2 class="content-title">Timeline</h2>
-	<ul class="tab">
-		<li v-for="(obj,index) in bus.units" :class="getColor(bus.nowData[index])">
-			<a href="#" :class="bus.selectedData == index ? 'active' : ''" @click="active(index)">{{obj.name}}</a>
-		</li>
-	</ul>
 	<div class="graph_top">
 		<p class="selectDate">
 			<input type="text" name="start" class="datepicker start" size="10" readonly onchange="bus.getGraph()">
@@ -12,6 +7,11 @@
 			<input type="text" name="end" class="datepicker end" size="10" readonly onchange="bus.getGraph()">
 		</p>
 	</div>
+	<ul class="tab">
+		<li v-for="(obj,index) in bus.units" :class="getColor(bus.nowData[index])">
+			<a href="#" :class="bus.selectedData == index ? 'active' : ''" @click="active(index)">{{obj.name}}</a>
+		</li>
+	</ul>
     <!-- {{bus.graphData ? bus.graphData.length : 0}} -->
     <div class="graph">
     	<div class="graph_mask" v-if="bus.graphLoading == false">Loading..</div>

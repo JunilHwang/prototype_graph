@@ -1,8 +1,9 @@
+// event bus 세팅
 var bus = new Vue({
+	// 일종의 전역 변수
 	data:{
 		selectedData:0,
 		nowData:[],
-		graphPoint:null,
 		graphData:[],
 		graphLoading:false,
 		graphNone:false,
@@ -16,16 +17,8 @@ var bus = new Vue({
 			{name:'DC 전압',unit:' V'},
 			{name:'DC 전류',unit:' A'},
 		],
-		map:null,
-		infowindow:{},
-		prevwindow:false
-	},
-	computed:{
 	},
 	methods:{
-		setPage:function(e){
-			e.preventDefault();
-		},
 		getGraph:function(){
 			var _this = this;
 			var start_date = getNow(), end_date = getNow();
@@ -66,82 +59,59 @@ var bus = new Vue({
 	}
 });
 
-//app
-function app(){
-	return new Vue({
-		el:"#app",
-		data:{
-			member:false
-		},
-		template:getTemplate('app'),
-		components:site()
-	})
-}
-
-function site(){
+//app 정의와 동시에 즉시 실행
+var app = (function(){
 	var timer = setInterval(function(){
 		bus.getGraph();
 	}, 1000)
-	return {
-		'site-header':{
-			template:getTemplate('site-header'),
-			methods:{
-				logout:function(e){
-					e.preventDefault();
-					$.get("./logout",null,function(data){
-						alert('로그아웃 되었습니다.');
-						bus.member = false;
-					});
-				}
-			}
-		},
-		'content-01':{
-			template:getTemplate('content-01'),
-			data:function(){
-				return {
-					loading:true
-				}
-			}
-		},
-		'content-02':{
-			template:getTemplate('content-02'),
-			data:function(){
-				return {
-					start:getNow(),
-					end:getNow(),
-				}
+	return new Vue({
+		el:"#app",
+		template:getTemplate('app'),
+		components:{
+			'site-header':{
+				template:getTemplate('site-header'),
 			},
-			methods:{
-				active:function(index){
-					bus.selectedData = index
+			'content-01':{
+				template:getTemplate('content-01'),
+			},
+			'content-02':{
+				template:getTemplate('content-02'),
+				data:function(){
+					return {
+						start:getNow(),
+						end:getNow(),
+					}
+				},
+				methods:{
+					active:function(index){
+						bus.selectedData = index
+						bus.getGraph();
+					},
+				},
+				mounted:function(){
+					$(".datepicker.start").datepicker();
+					$(".datepicker.end").datepicker({"minDate":new Date()})
+					$(".datepicker").val(getNow());
 					bus.getGraph();
-				},
-			},
-			mounted:function(){
-				$(".datepicker.start").datepicker();
-				$(".datepicker.end").datepicker({"minDate":new Date()})
-				$(".datepicker").val(getNow());
-			}
-		},
-		'content-03':{
-			template:getTemplate('content-03'),
-			methods:{
-				dataVal:function(data){
-					return parseInt(parseFloat(data)*100)/100;
-				},
-				dateFormat:function(data){
-					data = data.replace(/\-/gi,"/").slice(0,16);
-					return data;
 				}
-			}
-		},
-	}
-}
+			},
+			'content-03':{
+				template:getTemplate('content-03'),
+				methods:{
+					dataVal:function(data){
+						return parseInt(parseFloat(data)*100)/100;
+					},
+					dateFormat:function(data){
+						data = data.replace(/\-/gi,"/").slice(0,16);
+						return data;
+					}
+				}
+			},
+		}
+	})
+}())
 
-//Application Execute
-app();
-
-//get
+//컴포넌트 요소 ajax로 불러오기
 function getTemplate(file,option){
 	if(!option) option = null;
 	$.ajax({
@@ -156,12 +126,15 @@ function getTemplate(file,option){
 	return text;
 }
 
+// datepicker에서 사용될 날짜 포맷 함수
 function getDate( element ) {
 	var date = null
 	date = $.datepicker.parseDate( "yy-mm-dd", element.value );
 	return date;
 }
 
+
+// 현재 날짜 가져오기
 function getNow(){
 	var date = new Date();
 	var year = date.getFullYear();
@@ -172,7 +145,9 @@ function getNow(){
 	return now;
 }
 
+// 그래프 생성
 function graphCreate(){
+	// 변수 세팅
 	var canvas = document.getElementById('graph');
 	canvas.width = $("#graph").width();
 	canvas.height = $("#graph").height();
@@ -221,9 +196,13 @@ function graphCreate(){
 		}
 		width = renderData.length;
 	}
+
+	// 캔버스 비율 조정
 	if(canvas.width > width){
 		move_left_by = canvas.width/width;
 	}
+
+	// 캔버스 기본 세팅
 	var plusHeight = canvas.height*0.1;
 	context.fillStyle = '#f5f5f5';
 	context.scale(0.9,0.85);
@@ -233,6 +212,8 @@ function graphCreate(){
 	var commentMax = max+min;
 	context.font = "15px Arial";
 	context.fillStyle = "#666";
+
+	// 좌측 label 및 구분선 생성
 	for(var i=0;i<=5; i++){
 		var row = canvas.height - (rowHeight*i) + plusHeight;
 		var text = parseInt((min+(statHeight*i))*100)/100
@@ -251,6 +232,8 @@ function graphCreate(){
 	var num = 0;
 	var wr = parseInt(canvas.width/12);
 	var plusStep = parseInt(len/12)+1; // 시간을 12개의 구간으로 분류함
+
+	// 하단 label 생성
 	for(var i=0;i<=len;i+=plusStep){
 		leftPoint = (wr*num++)+30;
 		/* 실제 날짜 값을 삽입할 때 사용하는 부분
@@ -273,6 +256,8 @@ function graphCreate(){
 	}
 	var left = 0,
 		prev_stat = canvas.height - (renderData[0]*ratio) + plusHeight;
+
+	// 그래프 그리기
 	for(var i=0,len=renderData.length;i<len;i++) {
 		the_stat = canvas.height - (renderData[i]*ratio) + plusHeight;
 		context.beginPath();
@@ -288,6 +273,7 @@ function graphCreate(){
 	}
 }
 
+// 스코어에 따른 스코어 색상값 반환
 function getColor(score){
 	var color = 'color4';
 	if(score <= 25){
@@ -300,12 +286,12 @@ function getColor(score){
 	return color;
 }
 
-// Event Setting
+// 이벤트 세팅
 $(document)
-.on("click","a[href='#']",function(e){
+.on("click","a[href='#']",function(e){ // 비어있는 a태그의 이벤트 종료
 	e.preventDefault();
 })
-.on("change",".datepicker",function(){
+.on("change",".datepicker",function(){ // 날짜 선택 시 최소/최대 조정
 	var selectedDate = getDate(this);
 	if($(this).hasClass("start")){
 		$(".datepicker.end").datepicker("option","minDate",selectedDate);
@@ -313,16 +299,8 @@ $(document)
 		$(".datepicker.start").datepicker("option","maxDate",selectedDate);
 	}
 })
-.on("click",".gnb li",function(){
-	var target = $(this).data("target");
-	var _this = $(this);
-	if($(target).length){
-		var top = $(target).offset().top-120;
-		$("html,body").stop().animate({
-			scrollTop:top
-		},1000)
-	}
-})
+
+// datepicker 날짜포맷 및 기본 세팅
 $.datepicker.setDefaults({
     dateFormat: 'yy-mm-dd',
     showMonthAfterYear: true,

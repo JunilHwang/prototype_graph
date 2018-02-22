@@ -1,31 +1,21 @@
 var bus = new Vue({
 	data:{
-		device:[],
-		indoor:[],
-		outdoor:[],
-		selectedOutdoor:(function(){
-			var obj = localStorage.getItem('outdoor');
-			return obj ? JSON.parse(obj) : null;
-		}()),
-		selectedIndoor:(function(){
-			var obj = localStorage.getItem('indoor');
-			return obj ? JSON.parse(obj) : null;
-		}()),
-		activeData:null,
+		selectedData:0,
+		nowData:[],
 		graphPoint:null,
 		graphData:[],
-		graphDataPart:[],
-		graphType:'CIAQI',
 		graphLoading:false,
-		graphNone:true,
-		unit:{
-			'CIAQI':"",
-			'TEMP':" ℃",
-			'HUM':" %",
-			'DUST_IDX':" μg",
-			'CO2_IDX':" ppm",
-			'TVOC_IDX':" ppb",
-		},
+		graphNone:false,
+		graphLen:0,
+		units:[
+			{name:'태양광 발전량',unit:' W'},
+			{name:'온도',unit:' ℃'},
+			{name:'AC 전압',unit:' V'},
+			{name:'AC 전류',unit:' A'},
+			{name:'AC 주파수',unit:' Hz'},
+			{name:'DC 전압',unit:' V'},
+			{name:'DC 전류',unit:' A'},
+		],
 		map:null,
 		infowindow:{},
 		prevwindow:false
@@ -39,36 +29,39 @@ var bus = new Vue({
 		getGraph:function(){
 			var _this = this;
 			var start_date = getNow(), end_date = getNow();
-			//var start_date = "2018-01-22", end_date = "2018-01-23";
+			var nowData = [];
+			//var start_date = "2018-02-22", end_date = "2018-02-22";
 			if($(".datepicker.start").length){
 				start_date = $(".datepicker.start").val();
 				end_date = $(".datepicker.end").val();
 			}
+			var start_time = (new Date(start_date)).getTime();
+			var end_time = (new Date(end_date)).getTime();
+
+			// 그래프 값 랜덤으로 집어넣기.
+			var len = ((end_time-start_time)/(1000*60))+(60*24);
+			len = len/10; // 그래프 로딩 속도 때문에 조정해놨음.
+			_this.graphLen = len;
+			var scores, rand, graphData = [];
 			_this.graphLoading = false;
-			_this.graphNone = false;
-			/*$.ajax({
-				type:'get',
-				url:'./getGraph',
-				data:{srno:_this.activeData.DVC_SRNO,start:start_date,end:end_date},
-				success:function(data){
-					console.log('test');
-					var jsonData = JSON.parse(data);
-					if(jsonData.data.length){
-						_this.graphData = jsonData.data;
-						_this.graphPoint = jsonData.point;
-						_this.graphDataPart = jsonData.data.reverse().slice(0,100);
-						jsonData.data.reverse();
-						graphCreate();
-						_this.graphNone=false;
-					} else {
-						_this.graphData = [];
-						_this.graphPoint = {};
-						_this.graphDataPart = [];
-						_this.graphNone=true;
-					}
-					_this.graphLoading = true;
+			for(var i=0; i<7; i++){
+				scores = [];
+				for(var j=0; j<len; j++){
+					rand = Math.floor(Math.random()*100);
+					scores.push(rand);
+					if(j==len-1) nowData.push(rand);
 				}
-			})*/
+				var obj = {
+					max:scores.reduce(function(a,b){ return Math.max(a,b)}),
+					min:scores.reduce(function(a,b){ return Math.min(a,b)}),
+					scores:scores
+				}
+				graphData.push(obj);
+			}
+			_this.graphLoading = true;
+			bus.graphData = graphData;
+			bus.nowData = nowData;
+			graphCreate();
 		}
 	}
 });
@@ -86,11 +79,9 @@ function app(){
 }
 
 function site(){
-	var timer = setTimeout(function(){
-		clearTimeout(timer);
+	var timer = setInterval(function(){
 		bus.getGraph();
-		initMap();
-	}, 1000*30)
+	}, 1000)
 	return {
 		'site-header':{
 			template:getTemplate('site-header'),
@@ -110,68 +101,6 @@ function site(){
 				return {
 					loading:true
 				}
-			},
-			methods:{
-				selectIndoor:function(obj){
-					obj = this.getDetail(obj);
-					bus.selectedIndoor = obj;
-					localStorage.setItem("indoor",JSON.stringify(obj));
-					bus.activeData = obj;
-					bus.getGraph();
-				},
-				selectOutdoor:function(obj){
-					obj = this.getDetail(obj);
-					bus.selectedOutdoor = obj;
-					localStorage.setItem("outdoor",JSON.stringify(obj));
-					bus.activeData = obj;
-					bus.getGraph();
-				},
-				getDetail:function(obj){
-					var option = {
-						data:{
-							table:'GetDayMeterData',
-							serialNo:obj.DVC_SRNO,
-							id:bus.member.USR_ID
-						},
-						async:false,
-						success:function(data){
-							obj['list'] = JSON.parse(data).Data;
-						}
-					}
-					db.get(option);
-					return obj;
-				}
-			},
-			created:function(){
-				var _this = this;
-				var option = {
-					data:{
-						table:"GetDevice",
-						userid:bus.member.USR_ID
-					},
-					success:function(data){
-						var device = JSON.parse(data).Data;
-						var indoor = [], outdoor = [];
-						var obj;
-						if(device) for(var i=0, len = device.length; i<len; i++){
-							obj = device[i];
-							if(obj.DVC_CD == '03'){
-								outdoor.push(obj);
-							} else {
-								indoor.push(obj);
-							}
-							//console.log(obj.DVC_SRNO);
-						}
-						bus.device = device;
-						bus.indoor = indoor;
-						bus.outdoor = outdoor;
-						_this.loading = false;
-					}
-				}
-				db.getDevice(option);
-				setInterval(function(){
-					db.getDevice(option)
-				},1000*60);
 			}
 		},
 		'content-02':{
@@ -180,37 +109,13 @@ function site(){
 				return {
 					start:getNow(),
 					end:getNow(),
-					graphType:[
-						{id:'1',type:'CIAQI'},
-						{id:'2',type:'TEMP'},
-						{id:'3',type:'HUM'},
-						{id:'4',type:'DUST_IDX'},
-						{id:'5',type:'CO2_IDX'},
-						{id:'6',type:'TVOC_IDX'},
-					],
-				}
-			},
-			computed:{
-				activeIn:function(){
-					return bus.activeData === bus.selectedIndoor ? ' active' : '';
-				},
-				activeOut:function(){
-					return bus.activeData === bus.selectedOutdoor ? ' active' : '';
 				}
 			},
 			methods:{
-				active:function(type){
-					if(type == 'in'){
-						bus.activeData = bus.selectedIndoor;
-					} else if(type == 'out'){
-						bus.activeData = bus.selectedOutdoor;
-					}
+				active:function(index){
+					bus.selectedData = index
 					bus.getGraph();
 				},
-			},
-			created:function(){
-				bus.activeData = bus.selectedIndoor;
-				bus.getGraph();
 			},
 			mounted:function(){
 				$(".datepicker.start").datepicker();
@@ -268,49 +173,51 @@ function getNow(){
 }
 
 function graphCreate(){
-	var data = bus.graphData;
-	var point = bus.graphPoint;
-	var type = bus.graphType;
-	var min = parseFloat(point['MIN_'+type]) ? parseFloat(point['MIN_'+type]) : 0;
-	var max = parseFloat(point['MAX_'+type]) - min;
-	var canvas = document.getElementById('graph'),
+	var canvas = document.getElementById('graph');
+	canvas.width = $("#graph").width();
+	canvas.height = $("#graph").height();
+	var data = bus.graphData[bus.selectedData];
+	var score = data.scores;
+	var min = data.min,
+		max = data.max,
 		context = canvas.getContext('2d'),
 		ratio = 1,
 		move_left_by = 1,
-		step = 1;
-	canvas.width = $("#graph").width();
-	canvas.height = $("#graph").height();
-	var width = canvas.width;
-	var height = canvas.height;
-	var renderData = [],
+		step = 1,
+		width = canvas.width,
+		height = canvas.height,
+		renderData = [],
 		renderTime = [];
-	context.fillStyle = '#f5f5f5';
 	if(max != 0) if(height < max){
 		ratio = max/height;
 		height = max;
 	} else {
 		ratio = height/max;
 	}
-	if(data.length > 0) if(width >= data.length){
-		move_left_by = width/data.length;
-		width = data.length;
-		for(var i=0,len=data.length;i<len;i++){
-			renderData[i] = data[i][type] - min;
-			renderTime[i] = data[i]['UPD_DT'];
+
+	//데이터의 갯수가 1440개(하루치 분량) 이하일 때 1:1 매치로 그래프를 그린다.
+	if(score.length > 0) if(width >= score.length){
+		move_left_by = width/score.length;
+		width = score.length;
+		var hours = 0, minutes = 0;
+		for(var i=0,len=score.length;i<len;i++){
+			renderData.push(score[i] - min); // 그래프가 최소값 부터 시작하도록 삽입
+			renderTime.push(i); // 날짜 데이터 삽입
 		}
+	//데이터의 갯수가 1440개(하루치 분량) 이상일 때, 특정 구간의 평균 값으로 그래프를 그린다.
 	} else {
-		step = parseInt(data.length/width)+1;
+		step = parseInt(score.length/width)+1;
 		var avg, cnt;
-		for(var i=0,len=data.length;i<len;i+=step){
+		for(var i=0,len=score.length;i<len;i+=step){
 			avg = cnt = 0
-			for(var j=i;j<i+step;j++){
-				if(!data[j]) break;
-				avg += parseFloat(data[j][type]) ? parseFloat(data[j][type]) - min : 0;
+			for(var j=i;j<i+step;j++){ // 평균값 구하기
+				if(!score[j]) break;
+				avg += parseFloat(score[j]) ? parseFloat(score[j]) - min : 0;
 				cnt++;
 			}
 			if(cnt != 0) avg = avg/cnt;
-			renderData.push(avg);
-			renderTime.push(data[i]['UPD_DT']);
+			renderData.push(avg); // 평균값 삽입
+			renderTime.push(i); // 날짜 데이터 삽입
 		}
 		width = renderData.length;
 	}
@@ -318,6 +225,7 @@ function graphCreate(){
 		move_left_by = canvas.width/width;
 	}
 	var plusHeight = canvas.height*0.1;
+	context.fillStyle = '#f5f5f5';
 	context.scale(0.9,0.85);
 	context.translate(canvas.width*0.075, 0);
 	var rowHeight = parseInt((canvas.height)/5);
@@ -328,7 +236,7 @@ function graphCreate(){
 	for(var i=0;i<=5; i++){
 		var row = canvas.height - (rowHeight*i) + plusHeight;
 		var text = parseInt((min+(statHeight*i))*100)/100
-		text += bus.unit[type];
+		text += bus.units[bus.selectedData].unit;
 		context.beginPath();
 		context.moveTo(0,row);
 		context.lineTo(canvas.width,row);
@@ -342,14 +250,15 @@ function graphCreate(){
 	var renderTime2 = [];
 	var num = 0;
 	var wr = parseInt(canvas.width/12);
-	var plusStep = parseInt(len/12)+1;
+	var plusStep = parseInt(len/12)+1; // 시간을 12개의 구간으로 분류함
 	for(var i=0;i<=len;i+=plusStep){
+		leftPoint = (wr*num++)+30;
+		/* 실제 날짜 값을 삽입할 때 사용하는 부분
 		var date = new Date(renderTime[i]);
 		var month = date.getMonth()+1;
 		var day = date.getDate();
 		var hour = date.getHours();
 		var minutes = date.getMinutes();
-		var leftPoint = (wr*num++)+30;
 		var newDate;
 		if(month < 10) month = "0"+month;
 		if(day < 10) day = "0"+day;
@@ -359,7 +268,8 @@ function graphCreate(){
 		if(len<700){
 			newDate = month+"-"+day+" "+hour+":"+minutes;
 		}
-		context.fillText(newDate,leftPoint,canvas.height+plusHeight+25);
+		context.fillText(newDate,leftPoint,canvas.height+plusHeight+25);*/
+		context.fillText(i,leftPoint,canvas.height+plusHeight+25);
 	}
 	var left = 0,
 		prev_stat = canvas.height - (renderData[0]*ratio) + plusHeight;
@@ -378,6 +288,19 @@ function graphCreate(){
 	}
 }
 
+function getColor(score){
+	var color = 'color4';
+	if(score <= 25){
+		color = 'color1'
+	} else if(score <= 50){
+		color = 'color2'
+	} else if(score <= 75){
+		color = 'color3'
+	}
+	return color;
+}
+
+// Event Setting
 $(document)
 .on("click","a[href='#']",function(e){
 	e.preventDefault();

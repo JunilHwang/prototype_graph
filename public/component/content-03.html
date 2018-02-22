@@ -1,35 +1,28 @@
 <section class="content-03">
     <h2 class="content-title">Data List</h2>
     <div class="list">
-		<h3 v-html="bus.activeData.DVC_NM" />
     	<div class="table_wrap">
     		<table width="100%">
     			<colgroup>
-    				<col width="20%">
-    				<col width="16%">
-    				<col width="16%">
-    				<col width="16%">
-    				<col width="16%">
-    				<col width="16%">
+                    <col width="10%">
+    				<col width="12.5%">
+    				<col width="13%">
+    				<col width="13%">
+    				<col width="13%">
+    				<col width="13%">
+                    <col width="13%">
+    				<col width="12.5%">
     			</colgroup>
     			<thead>
     				<tr>
-    					<th>Data Time</th>
-    					<th>Temperature</th>
-    					<th>Humidity</th>
-    					<th>Ultrafine Dust(PM2.5)</th>
-    					<th>Carbon Dioxide</th>
-    					<th>TVOC</th>
+                        <th>시간</th>
+    					<th v-for="(obj,idx) in bus.units" v-html="obj.name" />
     				</tr>
     			</thead>
     			<tbody>
-    				<tr v-for="data in bus.graphDataPart">
-    					<td v-html="dateFormat(data.UPD_DT)" />
-    					<td v-html="dataVal(data.TEMP)+' ℃'" />
-    					<td v-html="dataVal(data.HUM)+' %'" />
-    					<td v-html="dataVal(data.DUST_IDX)+' μg'" />
-    					<td v-html="dataVal(data.CO2_IDX)+' ppm'" />
-    					<td v-html="dataVal(data.TVOC_IDX)+' ppb'" />
+    				<tr v-for="n in 100">
+                        <td v-html="bus.graphLen - n" />
+    					<td v-for="(obj,idx) in bus.units" v-html="bus.graphData[idx].scores[bus.graphLen - n] + obj.unit" />
     				</tr>
     			</tbody>
     		</table>

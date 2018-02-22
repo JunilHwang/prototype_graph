@@ -1,0 +1,38 @@
+<section class="content-03">
+    <h2 class="content-title">Data List</h2>
+    <div class="list">
+		<h3 v-html="bus.activeData.DVC_NM" />
+    	<div class="table_wrap">
+    		<table width="100%">
+    			<colgroup>
+    				<col width="20%">
+    				<col width="16%">
+    				<col width="16%">
+    				<col width="16%">
+    				<col width="16%">
+    				<col width="16%">
+    			</colgroup>
+    			<thead>
+    				<tr>
+    					<th>Data Time</th>
+    					<th>Temperature</th>
+    					<th>Humidity</th>
+    					<th>Ultrafine Dust(PM2.5)</th>
+    					<th>Carbon Dioxide</th>
+    					<th>TVOC</th>
+    				</tr>
+    			</thead>
+    			<tbody>
+    				<tr v-for="data in bus.graphDataPart">
+    					<td v-html="dateFormat(data.UPD_DT)" />
+    					<td v-html="dataVal(data.TEMP)+' ℃'" />
+    					<td v-html="dataVal(data.HUM)+' %'" />
+    					<td v-html="dataVal(data.DUST_IDX)+' μg'" />
+    					<td v-html="dataVal(data.CO2_IDX)+' ppm'" />
+    					<td v-html="dataVal(data.TVOC_IDX)+' ppb'" />
+    				</tr>
+    			</tbody>
+    		</table>
+    	</div>
+    </div>
+</section>

@@ -1,0 +1,44 @@
+<section class="content-01">
+    <h2 class="content-title">AirTumbler Elementary School</h2>
+    <ul class="selected">
+        <li class="indoor">
+            <div>
+                <template v-if="bus.selectedIndoor">
+                    <strong v-html="bus.selectedIndoor.DVC_NM" class="dvc_name" />
+                    <div class="state">
+                        <div :class="'cycle '+bus.selectedIndoor.color"></div>
+                        <div class="score">
+                            <span>Score</span>
+                            <strong v-html="bus.selectedIndoor.score">
+                        </div>
+                    </div>
+                    <ul>
+                        <li>
+                            <span class="lbl">Temp.</span>
+                            <span class="desc">{{bus.selectedIndoor.temp}}  <span class="unit">℃</span></span>
+                        </li>
+                        <li>
+                            <span class="lbl">Hum.</span>
+                            <span class="desc">{{bus.selectedIndoor.hum}} <span class="unit">%</span></span>
+                        </li>
+                        <li>
+                            <span class="lbl">Dust</span>
+                            <span class="desc">{{bus.selectedIndoor.dust}} <span class="unit">μg</span></span>
+                        </li>
+                        <li>
+                            <span class="lbl">Co2</span>
+                            <span class="desc">{{bus.selectedIndoor.co2}} <span class="unit">ppm</span></span>
+                        </li>
+                        <li>
+                            <span class="lbl">TVOC</span>
+                            <span class="desc">{{bus.selectedIndoor.tvoc}} <span class="unit">ppb</span></span>
+                        </li>
+                    </ul>
+                </template>
+                <tmeplate v-else>
+                    <p class="please">SELECT<br>INDOOR</p>
+                </tmeplate>
+            </div>
+        </li>
+    </ul>
+</section>

@@ -1,0 +1,25 @@
+<section class="content-02">
+    <h2 class="content-title">Timeline</h2>
+	<ul class="tab" v-if="bus.selectedIndoor && bus.selectedOutdoor">
+		<li v-if="bus.selectedIndoor" :class="bus.selectedIndoor.color + activeIn"><a href="#" @click="active('in');">{{bus.selectedIndoor.DVC_NM}}</a></li>
+		<li v-if="bus.selectedOutdoor" :class="bus.selectedOutdoor.color + activeOut"><a href="#" @click="active('out');">{{bus.selectedOutdoor.DVC_NM}}</a></li>
+	</ul>
+	<div class="graph_top">
+		<p class="selectDate">
+			<input type="text" name="start" class="datepicker start" size="10" readonly onchange="bus.getGraph()">
+			&nbsp; ~ &nbsp; 
+			<input type="text" name="end" class="datepicker end" size="10" readonly onchange="bus.getGraph()">
+		</p>
+		<ul class="graph_type">
+			<li v-for="data in graphType">
+				<a href="#" :class="bus.graphType == data.type ? 'active' : ''" @click="bus.graphType = data.type; bus.getGraph();"><img :src="'./public/img/icon-graph-element'+data.id+'.png'" :alt="data.type" :class="'icon'+data.id"></a>
+			</li>
+		</ul>
+	</div>
+    {{bus.graphData ? bus.graphData.length : 0}}
+    <div class="graph">
+    	<div class="graph_mask" v-if="bus.graphLoading == false">Loading..</div>
+    	<div class="graph_mask" v-if="bus.graphNone == true">No saved data.</div>
+    	<canvas v-else id="graph"></canvas>
+    </div>
+</section>

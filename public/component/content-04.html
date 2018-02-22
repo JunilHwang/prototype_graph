@@ -1,0 +1,26 @@
+<section class="content-04">
+    <h2 class="content-title">Map</h2>
+	<div>
+		<div id="map"></div>
+		<div class="deviceList">
+			<form action="" method="post">
+				<legend>Search</legend>
+				<fieldset>
+					<p class="search_frm">
+						<input type="text" placeholder="search" class="input" @keyup="search_key = event.target.value">
+						<input type="image" src="./public/img/icon-search.png" class="submit">
+					</p>
+				</fieldset>
+			</form>
+			<p class="sort">
+				<a href="#"><img src="./public/img/icon-sort.png" alt="sort" @click="sortDevice"></a>
+			</p>
+			<ul>
+				<li v-for="obj in deviceList" :class="obj.color">
+		                <a href="#" v-html="obj.DVC_NM" @click="selectDevice(obj)" />
+		                <span class="score" v-html="obj.score" />
+		            </li>
+			</ul>
+		</div>
+	</div>
+</section>
